@@ -12,7 +12,7 @@ CPID::~CPID()
 
 void CPID::init(double p,double i,double d)
 {
-    frist_tag = true;
+    frist_tag = false;
     i_base = 0;
     d_err = 0;
     old_err = 0;

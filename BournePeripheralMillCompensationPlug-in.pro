@@ -31,9 +31,6 @@ HEADERS += \
     cicomm.h \
     pid.h
 
-WIN32{
-    LIBS += -L$$PWD/./ -lCIComm
-}
 unix{
     LIBS += /usr/xeno-x86/lib/libxenomai.so
     LIBS += /usr/xeno-x86/lib/libnative.so

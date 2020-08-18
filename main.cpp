@@ -10,12 +10,12 @@ void AppLoop()
     if(!m_sc.initCIValue())
     {
         cout<<"open ci error!"<<endl;
-        return;
+        //return;
     }
-    if(!m_sc.initPID())
+    if(!m_sc.initPIDandP())
     {
         cout<<"open pid error!"<<endl;
-        return;
+        //return;
     }
 
     m_sc.loop();
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    cout<<"sss"<<endl;
+    cout<<"start"<<endl;
     AppLoop();
     cout<<"successfil"<<endl;
     return 0;
