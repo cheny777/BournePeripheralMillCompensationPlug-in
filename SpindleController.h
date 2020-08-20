@@ -86,7 +86,7 @@ private:
     /*设置滤波参数*/
     void parameterparameter();
     /*目标负载低通滤波*/
-    double targetLoadLowpass(double d);
+    double targetLoadLowpass(double d,int n);
 
     /*ci变量*/
     int m_CI[cilast];
@@ -107,7 +107,7 @@ private:
     /*均值*/
     AverageFiltering average[2];
     /*目标值低通*/
-    LowPassFilter targetlowpass;
+    LowPassFilter targetlowpass[2];
     /*补偿速度*/
     int m_compensationRate;
 

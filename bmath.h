@@ -24,7 +24,7 @@ const string CIPATH = "/home/Lynuc/Users/Config/bieldate.dat";
 #ifdef WIN32
 const string PIDAPPATH = "./bielpidapdate.dat";
 #else
-const string PIDPATH = "/home/Lynuc/Users/Config/bielpidapdate.dat";
+const string PIDAPPATH = "/home/Lynuc/Users/Config/bielpidapdate.dat";
 #endif
 
 
@@ -92,6 +92,7 @@ public:
     LowPassFilter()
     {
         FILTER_A = 0.1;
+        bl = false;
     }
     void setFilter(double d)
     {
@@ -99,13 +100,19 @@ public:
     }
     double onFilter(double newdata)
     {
-        Value = (int)((float)newdata * FILTER_A + (1.0 - FILTER_A) * (float)Value);
+        if(bl == false)
+        {
+            Value = newdata;
+            bl = true;
+        }
+        Value = newdata * FILTER_A + (1.0 - FILTER_A) * Value;
         return Value;
     }
 private:
     /*µÍÍ¨ÂË²¨*/
     double FILTER_A;
     double Value;
+    bool bl;
 };
 
 
@@ -171,6 +178,7 @@ public:
     virtual ~CCICALL();
     static void OnDestory();
     static void OnSetCI(int addr,double v);
+    static void OnSetCI(int addr,double v,bool bo);
     static void OnGetCI(int addr,double &v);
     static void OnSetCIAT(int addr,double v);
     static void OnGetCIAT(int addr,double &v);
@@ -200,7 +208,7 @@ public:
     void setTotalCompensation(double d);
 private:
     double m_kp, m_ki, m_kd;
-    double m_setValue = 0, m_error = 0, m_sum = 0;
+    double m_setValue, m_error, m_sum;
     double m_tc;
     double m_range;
 };

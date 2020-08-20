@@ -15,7 +15,7 @@ bool SpindleController::initCIValue()
     if(!bl)
     {
         tempid.clear();
-        for(int i =0;i<CI::cilast;i++)
+        for(int i =0;i<cilast;i++)
         {
             tempid.push_back(600+i);
         }
@@ -23,6 +23,10 @@ bool SpindleController::initCIValue()
         funtiongather::saveCIValue(tempid);
     }
 
+    for(int i =0;i<(int)tempid.size();i++)
+    {
+        m_CI[i] = tempid[i];
+    }
     return  bl;
 }
 
@@ -38,29 +42,29 @@ bool SpindleController::initPIDandP()
         tempid.push_back(0.1);
         tempid.push_back(0.1);
         tempid.push_back(10);
-        tempid.push_back(1);
-        tempid.push_back(1);
-        tempid.push_back(1);
-        tempid.push_back(1);
-        tempid.push_back(1);
-        tempid.push_back(1);
+        tempid.push_back(0.1);
+        tempid.push_back(0.1);
+        tempid.push_back(0.1);
+        tempid.push_back(0.1);
+        tempid.push_back(0.1);
+        tempid.push_back(0.1);
         tempid.push_back(100);
 
         funtiongather::savePIDAPValue(tempid);
     }
 
-    CCICALL::OnSetCI(m_CI[CI::Averagefiltering_1],tempid[0]);
-    CCICALL::OnSetCI(m_CI[CI::Averagefiltering_2],tempid[1]);
-    CCICALL::OnSetCI(m_CI[CI::lowfilterproportion_1],tempid[2]);
-    CCICALL::OnSetCI(m_CI[CI::lowfilterproportion_2],tempid[3]);
-    CCICALL::OnSetCI(m_CI[CI::compensationscope],tempid[4]);
-    CCICALL::OnSetCI(m_CI[CI::pidkp_1],tempid[5]);
-    CCICALL::OnSetCI(m_CI[CI::pidki_1],tempid[6]);
-    CCICALL::OnSetCI(m_CI[CI::pidkd_1],tempid[7]);
-    CCICALL::OnSetCI(m_CI[CI::pidkp_2],tempid[8]);
-    CCICALL::OnSetCI(m_CI[CI::pidki_2],tempid[9]);
-    CCICALL::OnSetCI(m_CI[CI::pidkd_2],tempid[10]);
-    CCICALL::OnSetCI(m_CI[CI::compensationRate],tempid[11]);
+    CCICALL::OnSetCI(m_CI[Averagefiltering_1],tempid[0]);
+    CCICALL::OnSetCI(m_CI[Averagefiltering_2],tempid[1]);
+    CCICALL::OnSetCI(m_CI[lowfilterproportion_1],tempid[2]);
+    CCICALL::OnSetCI(m_CI[lowfilterproportion_2],tempid[3]);
+    CCICALL::OnSetCI(m_CI[compensationscope],tempid[4]);
+    CCICALL::OnSetCI(m_CI[pidkp_1],tempid[5]);
+    CCICALL::OnSetCI(m_CI[pidki_1],tempid[6]);
+    CCICALL::OnSetCI(m_CI[pidkd_1],tempid[7]);
+    CCICALL::OnSetCI(m_CI[pidkp_2],tempid[8]);
+    CCICALL::OnSetCI(m_CI[pidki_2],tempid[9]);
+    CCICALL::OnSetCI(m_CI[pidkd_2],tempid[10]);
+    CCICALL::OnSetCI(m_CI[compensationRate],tempid[11]);
 
     average[0].SETLowPassFilter_AverageS(tempid[0]);
     average[1].SETLowPassFilter_AverageS(tempid[1]);
@@ -112,24 +116,26 @@ void SpindleController::oncontrol()
 
     /*获取主轴负载*/
     double load[2];
-    CCICALL::OnGetCI(m_CI[CI::axisload_1],load[0]);
-    CCICALL::OnGetCI(m_CI[CI::axisload_2],load[1]);
+    CCICALL::OnGetCI(m_CI[axisload_1],load[0]);
+    CCICALL::OnGetCI(m_CI[axisload_2],load[1]);
 
+    load[0] *=100;
+    load[1] *=100;
     load[0] = onfilter(load[0],0);
     load[1] = onfilter(load[1],1);
 
     /*输出主轴负载*/
-    CCICALL::OnSetCI(m_CI[CI::axisloadfilter_1],load[0]);
-    CCICALL::OnSetCI(m_CI[CI::axisloadfilter_1],load[1]);
+    CCICALL::OnSetCI(m_CI[axisloadfilter_1],load[0]);
+    CCICALL::OnSetCI(m_CI[axisloadfilter_2],load[1]);
 
-    if(is_start)
+    if(m_nc_state==1)
     {
-        cout<<"start run"<<endl;
+        //cout<<"start run"<<endl;
 
         /*判断是不是自动模式*/
         if(CCICALL::ongetcitoint(CI_MODE))
         {
-            m_fc_state = CCICALL::ongetcitoint(m_CI[CI::Powerswitch]);
+            m_fc_state = CCICALL::ongetcitoint(m_CI[Powerswitch]);
             if(m_fc_state != m_fc_state_last)
             {
                 m_fc_state_last = m_fc_state;
@@ -147,13 +153,15 @@ void SpindleController::oncontrol()
 
         /*获取目标值*/
         double targetvalue[2];
-        CCICALL::OnGetCI(m_CI[CI::targetLoad_1],targetvalue[0]);
-        CCICALL::OnGetCI(m_CI[CI::targetLoad_2],targetvalue[1]);
+        CCICALL::OnGetCI(m_CI[targetLoad_1],targetvalue[0]);
+        CCICALL::OnGetCI(m_CI[targetLoad_2],targetvalue[1]);
 
         //cout<<"target:"<<targetvalue[0]<<"  "<<targetvalue[1]<<endl;
         /*目标值滤波*/
-        targetvalue[0] = targetLoadLowpass(targetvalue[0]);
-        targetvalue[1] = targetLoadLowpass(targetvalue[1]);
+        targetvalue[0] = targetLoadLowpass(targetvalue[0],0);
+        targetvalue[1] = targetLoadLowpass(targetvalue[1],1);
+
+        //cout<<"tar:"<<targetvalue[0]<<endl;
         /*pid计算补偿*/
         if(m_fc_state == 1)
         {
@@ -161,24 +169,25 @@ void SpindleController::oncontrol()
             for(int i =0;i<2;i++)
             {
                 pid[i].setValue(targetvalue[i]);
-                err[i] = pid[i].iteration(load[i])/m_compensationRate;
-                pid[i].setTotalCompensation(err[i]);
+                err[i] = pid[i].iteration(load[i]);
+                //pid[i].setTotalCompensation(err[i]);
             }
-            CCICALL::OnSetCI(m_CI[CI::compensation_1],err[0]);
-            CCICALL::OnSetCI(m_CI[CI::compensation_2],err[1]);
+            CCICALL::OnSetCI(m_CI[compensation_1],err[0],true);
+            CCICALL::OnSetCI(m_CI[compensation_2],err[1]);
+           // cout<<"load:"<<load[0]<<" "<<err[0]<<endl;
         }
         /*清空补偿*/
         if(m_fc_state == 2)
         {
             double re[2];
-            CCICALL::OnGetCI(m_CI[CI::compensation_1],re[0]);
-            CCICALL::OnGetCI(m_CI[CI::compensation_2],re[1]);
+            CCICALL::OnGetCI(m_CI[compensation_1],re[0]);
+            CCICALL::OnGetCI(m_CI[compensation_2],re[1]);
 
             for(int i = 0;i<2;i++)
             {
                 if(re[i]<0.02)
                 {
-                    CCICALL::OnSetCI(m_CI[CI::Powerswitch],0);
+                    CCICALL::OnSetCI(m_CI[Powerswitch],0);
                 }
                 if(re[i]>=0)
                 {
@@ -189,27 +198,27 @@ void SpindleController::oncontrol()
                     re[i]+=0.01;
                 }
             }
-            CCICALL::OnSetCI(m_CI[CI::compensation_1],0);
-            CCICALL::OnSetCI(m_CI[CI::compensation_2],0);
+            CCICALL::OnSetCI(m_CI[compensation_1],0);
+            CCICALL::OnSetCI(m_CI[compensation_2],0);
         }
 
     }
-    if(is_stop)
+    if(m_nc_state == 0)
     {
-        cout<<"stop run"<<endl;
-        m_fc_state = CCICALL::ongetcitoint(m_CI[CI::Powerswitch]);
+        //cout<<"stop run"<<endl;
+        m_fc_state = CCICALL::ongetcitoint(m_CI[Powerswitch]);
 
         if(m_fc_state == 2)
         {
             double re[2];
-            CCICALL::OnGetCI(m_CI[CI::compensation_1],re[0]);
-            CCICALL::OnGetCI(m_CI[CI::compensation_2],re[1]);
+            CCICALL::OnGetCI(m_CI[compensation_1],re[0]);
+            CCICALL::OnGetCI(m_CI[compensation_2],re[1]);
 
             for(int i = 0;i<2;i++)
             {
                 if(re[i]<0.02)
                 {
-                    CCICALL::OnSetCI(m_CI[CI::Powerswitch],0);
+                    CCICALL::OnSetCI(m_CI[Powerswitch],0);
                 }
                 if(re[i]>=0)
                 {
@@ -220,8 +229,8 @@ void SpindleController::oncontrol()
                     re[i]+=0.01;
                 }
             }
-            CCICALL::OnSetCI(m_CI[CI::compensation_1],0);
-            CCICALL::OnSetCI(m_CI[CI::compensation_2],0);
+            CCICALL::OnSetCI(m_CI[compensation_1],0);
+            CCICALL::OnSetCI(m_CI[compensation_2],0);
         }
     }
 
@@ -230,12 +239,12 @@ void SpindleController::oncontrol()
 double SpindleController::onfilter(double d, int n)
 {
     /*低通*/
-    if(CCICALL::ongetcitoint(m_CI[CI::lowfilteringonoff]))
+    if(CCICALL::ongetcitoint(m_CI[lowfilteringonoff]))
     {
         d = lowpass[n].onFilter(d);
     }
     /*均值*/
-    if(CCICALL::ongetcitoint(m_CI[CI::Averagefilteringonoff]))
+    if(CCICALL::ongetcitoint(m_CI[Averagefilteringonoff]))
     {
         d = average[n].LowPassFilter_AverageS(d);
     }
@@ -244,21 +253,21 @@ double SpindleController::onfilter(double d, int n)
 
 void SpindleController::parameterparameter()
 {
-    if(CCICALL::ongetcitoint(m_CI[CI::refreshdata]))
+    if(CCICALL::ongetcitoint(m_CI[refreshdata]))
     {
         double tempid[pidlast];
-        CCICALL::OnGetCI(m_CI[CI::Averagefiltering_1],tempid[0]);
-        CCICALL::OnGetCI(m_CI[CI::Averagefiltering_2],tempid[1]);
-        CCICALL::OnGetCI(m_CI[CI::lowfilterproportion_1],tempid[2]);
-        CCICALL::OnGetCI(m_CI[CI::lowfilterproportion_2],tempid[3]);
-        CCICALL::OnGetCI(m_CI[CI::compensationscope],tempid[4]);
-        CCICALL::OnGetCI(m_CI[CI::pidkp_1],tempid[5]);
-        CCICALL::OnGetCI(m_CI[CI::pidki_1],tempid[6]);
-        CCICALL::OnGetCI(m_CI[CI::pidkd_1],tempid[7]);
-        CCICALL::OnGetCI(m_CI[CI::pidkp_2],tempid[8]);
-        CCICALL::OnGetCI(m_CI[CI::pidki_2],tempid[9]);
-        CCICALL::OnGetCI(m_CI[CI::pidkd_2],tempid[10]);
-        CCICALL::OnGetCI(m_CI[CI::compensationRate],tempid[11]);
+        CCICALL::OnGetCI(m_CI[Averagefiltering_1],tempid[0]);
+        CCICALL::OnGetCI(m_CI[Averagefiltering_2],tempid[1]);
+        CCICALL::OnGetCI(m_CI[lowfilterproportion_1],tempid[2]);
+        CCICALL::OnGetCI(m_CI[lowfilterproportion_2],tempid[3]);
+        CCICALL::OnGetCI(m_CI[compensationscope],tempid[4]);
+        CCICALL::OnGetCI(m_CI[pidkp_1],tempid[5]);
+        CCICALL::OnGetCI(m_CI[pidki_1],tempid[6]);
+        CCICALL::OnGetCI(m_CI[pidkd_1],tempid[7]);
+        CCICALL::OnGetCI(m_CI[pidkp_2],tempid[8]);
+        CCICALL::OnGetCI(m_CI[pidki_2],tempid[9]);
+        CCICALL::OnGetCI(m_CI[pidkd_2],tempid[10]);
+        CCICALL::OnGetCI(m_CI[compensationRate],tempid[11]);
 
         average[0].SETLowPassFilter_AverageS(tempid[0]);
         average[1].SETLowPassFilter_AverageS(tempid[1]);
@@ -281,14 +290,14 @@ void SpindleController::parameterparameter()
         }
         funtiongather::savePIDAPValue(tempidv);
 
-        CCICALL::OnSetCI(m_CI[CI::refreshdata],0);
+        CCICALL::OnSetCI(m_CI[refreshdata],0);
     }
 }
 
-double SpindleController::targetLoadLowpass(double d)
+double SpindleController::targetLoadLowpass(double d, int n)
 {
     /*低通*/
-    return targetlowpass.onFilter(d);
+    return targetlowpass[n].onFilter(d);
 }
 
 

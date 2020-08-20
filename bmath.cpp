@@ -165,6 +165,15 @@ void CCICALL::OnSetCI(int addr,double v)
 
 }
 
+void CCICALL::OnSetCI(int addr, double v, bool bo)
+{
+    CCICALL * i = GetIns();
+#ifdef WIN32
+#else
+    SetMacroVal(i->m_macro_addr,addr,v,bo);
+#endif
+}
+
 void CCICALL::OnGetCI(int addr,double &v)
 {
     CCICALL * i = GetIns();
@@ -226,16 +235,19 @@ double PID::iteration(double measured)
 {
     double error = m_setValue - measured;
     double derror = error - m_error;
-
     m_sum += error;
     m_error = error;
-
+    cout<<m_sum<<endl;
     double r = m_kp * error + m_ki * m_sum + m_kd * derror;
-    /*²¹³¥·¶Î§*/
-    if(fabs(r+m_tc)>=m_range)
+    if(m_sum >= 10000)
     {
-        r = m_range - m_tc;
+        m_sum = 10000;
     }
+    /*²¹³¥·¶Î§*/
+//    if(fabs(r+m_tc)>=m_range)
+//    {
+//        r = m_range - m_tc;
+//    }
     return r;
 }
 

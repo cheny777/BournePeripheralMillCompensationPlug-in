@@ -32,8 +32,8 @@ HEADERS += \
     pid.h
 
 unix{
-    LIBS += /usr/xeno-x86/lib/libxenomai.so
-    LIBS += /usr/xeno-x86/lib/libnative.so
-    LIBS += /usr/lib/scomm.so
     LIBS += /home/Lynuc/CNC/CIComm.so
+    LIBS += /usr/xenomai/lib/libnative.so
+    LIBS += /usr/xenomai/lib/libxenomai.so
+    LIBS += /home/Lynuc/SERVO/scomm.so
 }
